@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>DRAGO | Status</title>
+  <style>
+    body {
+      background-color: black;
+      color: #00ff00;
+      font-family: monospace;
+      text-align: center;
+      padding-top: 1vh;
+    }
+    pre.ascii-drago {
+      font-size: 24px;
+      white-space: pre;
+      margin-bottom: 10px;
+    }
+    pre.ascii-dragon {
+      font-size: 14px;
+      white-space: pre;
+      line-height: 1.2;
+      margin-bottom: 25px;
+    }
+    .info-block {
+      font-size: 18px;
+      margin: 8px 0;
+    }
+    .label {
+      font-weight: bold;
+      margin-right: 5px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/UAParser.js/1.0.2/ua-parser.min.js"></script>
+</head>
+<body>
+
+<pre class="ascii-drago">
+ _____  _____            _____  ____
+|  __ \|  __ \     /\   / ____|/ __ \
+| |  | | |__) |   /  \ | |  __| |  | |
+| |  | |  _  /   / /\ \| | |_ | |  | |
+| |__| | | \ \  / ____ \ |__| | |__| |
+|_____/|_|  \_\/_/    \_\_____|\____/ 
+</pre>
+
+<pre class="ascii-dragon">
+________________________________________________________________
+   
+</pre>
+<pre class="ascii-dragon">
+ВАШИ ДАННЫЕ:
+</pre>
+<div class="info-block">
+  🌐 <span class="label">Публичный IP:</span> <span id="ip">Загрузка...</span>
+</div>
+<div class="info-block">
+  🌐 <span class="label">Столица:</span> <span id="city">Загрузка...</span>
+</div>
+<div class="info-block">
+  🌐 <span class="label">Страна:</span> <span id="country">Загрузка...</span>
+</div>
+<div class="info-block">
+  📱 <span class="label">Устройство:</span> <span id="device">Загрузка...</span>
+</div>
+<div class="info-block">
+  ⚙️ <span class="label">ОС:</span> <span id="os">Загрузка...</span>
+</div>
+<div class="info-block">
+  🌐 <span class="label">Браузер:</span> <span id="browser">Загрузка...</span>
+</div>
+<div class="info-block">
+  🧠 <span class="label">Оперативная память:</span> <span id="ram">Загрузка...</span>
+</div>
+<div class="info-block">
+  💾 <span class="label">Память браузера:</span> <span id="storage">Загрузка...</span>
+</div>
+<div class="info-block">
+  🔥 <span class="label">Процессор (предположительно):</span> <span id="cpu">Загрузка...</span>
+</div>
+
+<script>
+  function typeWriter(element, text, speed = 40) {
+    element.textContent = '';
+    let i = 0;
+    function type() {
+      if (i < text.length) {
+        element.textContent += text.charAt(i);
+        i++;
+        setTimeout(type, speed);
+      }
+    }
+    type();
+  }
+
+  function parseDeviceInfo() {
+    const parser = new UAParser();
+    const result = parser.getResult();
+
+    const deviceVendor = result.device.vendor || '';
+    const deviceModel = result.device.model || '';
+    const deviceName = (deviceVendor + ' ' + deviceModel).trim() || 'Неизвестно';
+    const osName = result.os.name + ' ' + result.os.version;
+    const browser = result.browser.name + ' ' + result.browser.version;
+    const ram = navigator.deviceMemory ? navigator.deviceMemory + ' ГБ' : 'Неизвестно';
+
+    typeWriter(document.getElementById('device'), deviceName);
+    typeWriter(document.getElementById('os'), osName);
+    typeWriter(document.getElementById('browser'), browser);
+    typeWriter(document.getElementById('ram'), ram);
+
+    const userAgent = navigator.userAgent.toLowerCase();
+    let cpu = 'Неизвестно';
+
+    if (userAgent.includes('iphone')) cpu = 'Apple A-серия (iPhone)';
+    else if (userAgent.includes('ipad')) cpu = 'Apple A-серия (iPad)';
+    else if (userAgent.includes('sm-')) cpu = 'Samsung Exynos / Snapdragon (Android)';
+    else if (userAgent.includes('redmi') || userAgent.includes('mi')) cpu = 'Snapdragon / MediaTek (Xiaomi)';
+    else if (userAgent.includes('huawei') || userAgent.includes('honor')) cpu = 'Kirin / Snapdragon / MediaTek (Huawei)';
+    else if (userAgent.includes('oneplus')) cpu = 'Snapdragon (OnePlus)';
+    else if (userAgent.includes('pixel')) cpu = 'Google Tensor / Snapdragon (Pixel)';
+    else if (userAgent.includes('realme') || userAgent.includes('oppo') || userAgent.includes('vivo')) cpu = 'MediaTek / Snapdragon (BBK)';
+    else if (/intel/i.test(userAgent)) cpu = 'Intel (по user-agent)';
+    else if (/amd/i.test(userAgent)) cpu = 'AMD (по user-agent)';
+    else if (/arm/i.test(userAgent)) cpu = 'ARM (по user-agent)';
+
+    typeWriter(document.getElementById('cpu'), cpu);
+  }
+
+  async function getStorageInfo() {
+    const storageEl = document.getElementById('storage');
+    if (navigator.storage && navigator.storage.estimate) {
+      const estimate = await navigator.storage.estimate();
+      const used = (estimate.usage / (1024 * 1024)).toFixed(1);
+      const total = (estimate.quota / (1024 * 1024)).toFixed(1);
+      typeWriter(storageEl, `${used} МБ / ${total} МБ`);
+    } else {
+      typeWriter(storageEl, 'Недоступно');
+    }
+  }
+
+  async function getIPandLocation() {
+    try {
+      const ipRes = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipRes.json();
+      typeWriter(document.getElementById('ip'), ipData.ip);
+
+      const geoRes = await fetch(`https://ipapi.co/${ipData.ip}/json/`);
+      const geo = await geoRes.json();
+      typeWriter(document.getElementById('city'), geo.city || 'Неизвестно');
+      typeWriter(document.getElementById('country'), geo.country_name || 'Неизвестно');
+
+      parseDeviceInfo();
+      await getStorageInfo();
+    } catch (e) {
+      const errorText = 'Ошибка';
+      ['ip', 'city', 'country', 'device', 'os', 'browser', 'ram', 'storage', 'cpu'].forEach(id => {
+        document.getElementById(id).textContent = errorText;
+      });
+    }
+  }
+
+  getIPandLocation();
+</script>
+
+</body>
+</html>
